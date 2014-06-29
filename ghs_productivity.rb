@@ -1,13 +1,8 @@
-# Your are pondering if your current bitcoin/ghs investments are actually worth it so
-# you are put the task to determine the number of bticoins 1 GHS gives you daily as a
-# function of time.
+# Under construction!!!
 #
-# Input:
-# Your are given transactions-mining-BTC.csv and transactions-transactions-GHS.csv
+# Given 2 files as input, your BTC transaction mining history and your GHS transaction trade history
+# This script outps a csv to stdout with your daily GHash balance and your daily BTC minings
 #
-# Output:
-# You are expected to output
-# <date>: btc/ghs: <bitcoins_mined/ghs>, total mined: <bitcoins_mined>
 
 # Part 1, parse input
 #
@@ -82,21 +77,6 @@ def calc_weighted_average_balance(txs)
   return result/total_minutes
 end
 
-# this list is also ordered by date
-def calc_weighted_average_amount(txs)
-  total_minutes = 60*24
-  minutes = 0
-  result = 0
-  txs.each do |tx|
-    date = tx.date
-    minute = date.minute + date.hour*60
-    weight = minute - minutes
-    result += tx.amount*weight
-  end
-  return result/total_minutes
-end
-
-
 # a couple of notes on the data
 # 1. There can be more than 1 GHS transaction for any given day
 #    the GHS balance for that day is then the average of the GHS
@@ -117,19 +97,6 @@ def calc_balance_map(txs)
   return balance_map
 end
 
-def calc_amount_map(txs)
-  balance_map = {}
-  txs.each_with_index do |tx, i|
-    date = tx.date.to_date
-    #next if txs[i-1] != nil and date == txs[i-1].date.to_date
-    transactions_on_day = find_transactions_on_date(txs, i, date)
-    balance_map[date] = calc_weighted_average_amount(transactions_on_day)
-    balance_map[date.next_day] = transactions_on_day.last.balance
-  end
-  return balance_map
-end
-
-
 # now given that some days are empty, we need to 'fill them up'
 def fill_missing_dates(date_init, date_end, balance_map)
   date_init.upto(date_end) do |date|
@@ -140,24 +107,26 @@ def fill_missing_dates(date_init, date_end, balance_map)
   return balance_map
 end
 
+#
+def calc_mining_map(mining_transactions)
+  map = {}
+  mining_transactions.each_with_index do |tx,i|
+    date = tx.date.to_date
+    txs = find_transactions_on_date(mining_transactions, i, date)
+    sum_amount = txs.map { |t| t.amount }.reduce(:+)
+    p sum_amount
+    map[date] = sum_amount
+  end
+  return map
+end
+
 ghs_date_map = fill_missing_dates(min_date, max_date, calc_balance_map(ghs_transactions))
-mining_date_map = fill_missing_dates(min_date, max_date, calc_amount_map(mining_transactions))
+mining_date_map = fill_missing_dates(min_date, max_date, calc_mining_map(mining_transactions))
 
 ghs_date_map.sort.each do |row|
   date = row[0]
   ghs_balance = row[1]
   mining_balance = mining_date_map[date]
-  puts "#{date},#{ghs_balance},#{mining_balance}"
+  puts "#{date},#{ghs_balance.to_f},#{mining_balance.to_f}"
 end
-
-# File.open './tmp.csv','w' do |file|
-#   ghs_date_map.each do |date, ghs_balance|
-#     mining_balance = mining_date_map[date]
-#     file.write ghs_balance
-#     file.write ","
-#     file.write mining_balance
-#     file.write "\n"
-#   end
-# end
-
 
