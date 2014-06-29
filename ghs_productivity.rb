@@ -87,12 +87,14 @@ end
 # maps Date => balance for that day
 def calc_balance_map(txs)
   balance_map = {}
+  last_date = nil
   txs.each_with_index do |tx, i|
     date = tx.date.to_date
-    #next if txs[i-1] != nil and date == txs[i-1].date.to_date
+    next if last_date == date
     transactions_on_day = find_transactions_on_date(txs, i, date)
     balance_map[date] = calc_weighted_average_balance(transactions_on_day)
     balance_map[date.next_day] = transactions_on_day.last.balance
+    last_date = date
   end
   return balance_map
 end
@@ -110,12 +112,14 @@ end
 #
 def calc_mining_map(mining_transactions)
   map = {}
+  last_date = nil
   mining_transactions.each_with_index do |tx,i|
     date = tx.date.to_date
+    next if last_date == date
     txs = find_transactions_on_date(mining_transactions, i, date)
     sum_amount = txs.map { |t| t.amount }.reduce(:+)
-    p sum_amount
     map[date] = sum_amount
+    last_date = date
   end
   return map
 end
